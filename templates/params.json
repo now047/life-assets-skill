@@ -1,0 +1,39 @@
+{
+  "start_date": "YYYY-MM-DD",
+  "currency_symbol": "¥",
+  "financial_assets": {
+    "value": 0,
+    "as_of": "",
+    "source": "家計アプリ等の純資産"
+  },
+  "r_exp": 5000,
+  "r_loss": 20000,
+  "family_multiplier": 1.5,
+  "run_base": 300,
+  "run_per_km": 50,
+  "run_half_life_days": {
+    "low": 45,
+    "mid": 90,
+    "high": 180
+  },
+  "purchase_half_life_days": {
+    "食品・消耗品": 14,
+    "嗜好品": 30,
+    "衣類・日用品": 180,
+    "道具・機材": 730,
+    "家具・家電": 1460,
+    "その他": 90
+  },
+  "experience_half_life_days": 730,
+  "experience_half_life_days_with_record": 1460,
+  "loss_recovery_half_life_days": 180,
+  "loss_permanent_ratio": 0.2,
+  "purchase_full_rate_limit": 50000,
+  "purchase_beyond_rate": 0.3,
+  "reading_per_min": 10,
+  "reading_half_life_days": 180,
+  "reading_complete_bonus": 1000,
+  "reading_complete_half_life_days": 365,
+  "growth_rate": 0.002,
+  "growth_half_life_days": 365
+}
