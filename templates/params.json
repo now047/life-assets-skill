@@ -28,8 +28,6 @@
   "experience_half_life_days_with_record": 1460,
   "loss_recovery_half_life_days": 180,
   "loss_permanent_ratio": 0.2,
-  "purchase_full_rate_limit": 50000,
-  "purchase_beyond_rate": 0.3,
   "reading_per_min": 10,
   "reading_half_life_days": 180,
   "reading_complete_bonus": 1000,

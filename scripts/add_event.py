@@ -2,7 +2,11 @@
 """ライフ資産の台帳にイベントを1件追加する。
 使い方（いずれか1モード）:
   ラン:       --run-km 5.2 [--date YYYY-MM-DD] [--label 任意]
-  購入:       --price 30000 --category 道具・機材 [--satisfaction 1.3] --label 品名
+  購入:       --price 30000 --category 道具・機材 --manage --label 品名
+              （購入時点で管理対象とするか判断する。--manage なら価格そのままをモノ資産 G に
+               計上し購入品レジストリにも登録。--no-manage なら台帳に載せない）
+  棚卸し:     --use-value 15000 --label 品名 [--recorded]
+              （年1回の棚卸しで「利用して得た価値」を幸福の側 E に計上。半減期は体験と同じ）
   体験:       --points 4 [--family] [--recorded] --label 内容
   喪失:       --severity 3 --label 内容
   読書:       --reading-min 25 [--date YYYY-MM-DD] [--label 本のタイトル等]
@@ -33,7 +37,9 @@ def main():
     ap.add_argument("--run-km", type=float, default=None)
     ap.add_argument("--price", type=float, default=None)
     ap.add_argument("--category", default="その他")
-    ap.add_argument("--satisfaction", type=float, default=1.0)
+    ap.add_argument("--manage", action="store_true")
+    ap.add_argument("--no-manage", action="store_true")
+    ap.add_argument("--use-value", type=float, default=None)
     ap.add_argument("--points", type=float, default=None)
     ap.add_argument("--family", action="store_true")
     ap.add_argument("--recorded", action="store_true")
@@ -66,14 +72,26 @@ def main():
               "label": a.label or f"ラン {a.run_km:.1f}km",
               "amount": amount, "half_life_days": hl, "km": a.run_km}
     elif a.price is not None:
+        if a.manage and a.no_manage:
+            print("ERROR: --manage と --no-manage は同時に指定できません", file=sys.stderr)
+            sys.exit(2)
+        if not a.manage and not a.no_manage:
+            print("ERROR: 購入時点で管理対象とするか判断し、--manage か --no-manage を指定してください", file=sys.stderr)
+            sys.exit(2)
+        if a.no_manage:
+            print("SKIP: 管理対象外のため台帳に載せませんでした")
+            sys.exit(3)
         hl = params["purchase_half_life_days"].get(a.category, params["purchase_half_life_days"]["その他"])
-        limit = params.get("purchase_full_rate_limit", 50000)
-        rate = params.get("purchase_beyond_rate", 0.3)
-        conv = min(a.price, limit) + rate * max(a.price - limit, 0)
         ev = {"date": d, "type": "purchase", "account": "G", "label": a.label,
-              "amount": round(conv * a.satisfaction), "half_life_days": hl,
-              "price": a.price, "satisfaction": a.satisfaction, "category": a.category,
-              "converted_base": round(conv)}
+              "amount": round(a.price), "half_life_days": hl,
+              "price": a.price, "category": a.category, "managed": True}
+    elif a.use_value is not None:
+        if not a.label:
+            print("ERROR: 棚卸しの計上には --label で品名が必要です", file=sys.stderr)
+            sys.exit(2)
+        hl = params["experience_half_life_days_with_record"] if a.recorded else params["experience_half_life_days"]
+        ev = {"date": d, "type": "use_value", "account": "E", "label": a.label,
+              "amount": round(a.use_value), "half_life_days": hl, "recorded": a.recorded}
     elif a.points is not None:
         mult = params["family_multiplier"] if a.family else 1.0
         hl = params["experience_half_life_days_with_record"] if a.recorded else params["experience_half_life_days"]
@@ -135,6 +153,11 @@ def main():
 
     with open(base / "events.jsonl", "a", encoding="utf-8") as f:
         f.write(json.dumps(ev, ensure_ascii=False) + "\n")
+    if ev.get("type") == "purchase" and ev.get("managed"):
+        reg = {"date": ev["date"], "label": ev["label"], "price": ev["price"],
+               "category": ev["category"]}
+        with open(base / "registry.jsonl", "a", encoding="utf-8") as f:
+            f.write(json.dumps(reg, ensure_ascii=False) + "\n")
     print(json.dumps(ev, ensure_ascii=False))
 
 if __name__ == "__main__":
